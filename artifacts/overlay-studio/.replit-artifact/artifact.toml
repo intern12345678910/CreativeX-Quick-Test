@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Overlay Studio"
+version = "1.0.0"
+id = "artifacts/overlay-studio"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23194
+
+[services.development]
+run = "pnpm --filter @workspace/overlay-studio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/overlay-studio", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/overlay-studio/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23194"
+BASE_PATH = "/"
