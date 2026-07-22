@@ -1,98 +1,54 @@
 import { create } from 'zustand';
-import { EditorElement, BaseMedia, ElementType } from '../types';
+import { BaseMedia, GridSettings, OverlayMode, PlatformId } from '../types';
+
+function defaultGrid(naturalWidth: number, naturalHeight: number): GridSettings {
+  const ar = naturalWidth / naturalHeight;
+  const rows = 3;
+  const columns = Math.max(2, Math.round(ar * rows));
+  return { columns, rows, color: '#ffffff', lineWidth: 1, opacity: 0.5 };
+}
 
 interface EditorState {
   baseMedia: BaseMedia | null;
-  elements: EditorElement[];
-  selectedId: string | null;
-  
-  // Actions
+  overlayMode: OverlayMode;
+  gridSettings: GridSettings;
+  selectedPlatform: PlatformId | null;
+
   setBaseMedia: (media: BaseMedia | null) => void;
-  addElement: (element: Omit<EditorElement, 'id'>) => void;
-  updateElement: (id: string, updates: Partial<EditorElement>) => void;
-  deleteElement: (id: string) => void;
-  selectElement: (id: string | null) => void;
-  reorderElements: (startIndex: number, endIndex: number) => void;
-  moveLayerUp: (id: string) => void;
-  moveLayerDown: (id: string) => void;
-  bringToFront: (id: string) => void;
-  sendToBack: (id: string) => void;
+  setOverlayMode: (mode: OverlayMode) => void;
+  setGridSettings: (s: Partial<GridSettings>) => void;
+  setSelectedPlatform: (id: PlatformId | null) => void;
   clearAll: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
   baseMedia: null,
-  elements: [],
-  selectedId: null,
+  overlayMode: 'none',
+  gridSettings: { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
+  selectedPlatform: null,
 
-  setBaseMedia: (media) => set({ baseMedia: media, elements: [], selectedId: null }),
+  setBaseMedia: (media) =>
+    set({
+      baseMedia: media,
+      overlayMode: 'none',
+      selectedPlatform: null,
+      gridSettings: media
+        ? defaultGrid(media.naturalWidth, media.naturalHeight)
+        : { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
+    }),
 
-  addElement: (element) => set((state) => {
-    const id = crypto.randomUUID();
-    const newElement = { ...element, id } as EditorElement;
-    return {
-      elements: [...state.elements, newElement],
-      selectedId: id,
-    };
-  }),
+  setOverlayMode: (mode) => set({ overlayMode: mode }),
 
-  updateElement: (id, updates) => set((state) => ({
-    elements: state.elements.map((el) => 
-      el.id === id ? { ...el, ...updates } as EditorElement : el
-    ),
-  })),
+  setGridSettings: (s) =>
+    set((state) => ({ gridSettings: { ...state.gridSettings, ...s } })),
 
-  deleteElement: (id) => set((state) => ({
-    elements: state.elements.filter((el) => el.id !== id),
-    selectedId: state.selectedId === id ? null : state.selectedId,
-  })),
+  setSelectedPlatform: (id) => set({ selectedPlatform: id }),
 
-  selectElement: (id) => set({ selectedId: id }),
-
-  reorderElements: (startIndex, endIndex) => set((state) => {
-    const result = Array.from(state.elements);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-    return { elements: result };
-  }),
-
-  moveLayerUp: (id) => set((state) => {
-    const index = state.elements.findIndex(el => el.id === id);
-    if (index === -1 || index === state.elements.length - 1) return state;
-    const newElements = [...state.elements];
-    const temp = newElements[index + 1];
-    newElements[index + 1] = newElements[index];
-    newElements[index] = temp;
-    return { elements: newElements };
-  }),
-
-  moveLayerDown: (id) => set((state) => {
-    const index = state.elements.findIndex(el => el.id === id);
-    if (index <= 0) return state;
-    const newElements = [...state.elements];
-    const temp = newElements[index - 1];
-    newElements[index - 1] = newElements[index];
-    newElements[index] = temp;
-    return { elements: newElements };
-  }),
-  
-  bringToFront: (id) => set((state) => {
-    const index = state.elements.findIndex(el => el.id === id);
-    if (index === -1 || index === state.elements.length - 1) return state;
-    const newElements = [...state.elements];
-    const [item] = newElements.splice(index, 1);
-    newElements.push(item);
-    return { elements: newElements };
-  }),
-  
-  sendToBack: (id) => set((state) => {
-    const index = state.elements.findIndex(el => el.id === id);
-    if (index <= 0) return state;
-    const newElements = [...state.elements];
-    const [item] = newElements.splice(index, 1);
-    newElements.unshift(item);
-    return { elements: newElements };
-  }),
-
-  clearAll: () => set({ baseMedia: null, elements: [], selectedId: null }),
+  clearAll: () =>
+    set({
+      baseMedia: null,
+      overlayMode: 'none',
+      selectedPlatform: null,
+      gridSettings: { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
+    }),
 }));
