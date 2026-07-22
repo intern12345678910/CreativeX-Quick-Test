@@ -2,7 +2,6 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import GridOverlay from './GridOverlay';
 import PlatformOverlay from './PlatformOverlay';
-import { PLATFORMS } from '@/types';
 
 export default function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,8 +11,6 @@ export default function Canvas() {
   const overlayMode = useEditorStore((s) => s.overlayMode);
   const gridSettings = useEditorStore((s) => s.gridSettings);
   const selectedPlatform = useEditorStore((s) => s.selectedPlatform);
-
-  const activePlatform = PLATFORMS.find((p) => p.id === selectedPlatform) ?? null;
 
   const updateSize = useCallback(() => {
     if (!containerRef.current || !baseMedia) return;
@@ -84,11 +81,11 @@ export default function Canvas() {
           )}
 
           {/* Platform overlay */}
-          {overlayMode === 'platform' && activePlatform && (
+          {overlayMode === 'platform' && selectedPlatform && (
             <PlatformOverlay
               width={displaySize.width}
               height={displaySize.height}
-              platform={activePlatform}
+              platformId={selectedPlatform}
             />
           )}
         </div>
