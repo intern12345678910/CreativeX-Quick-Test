@@ -36,14 +36,20 @@ export default function Canvas() {
     if (!containerRef.current || !baseMedia) return;
     const { clientWidth, clientHeight } = containerRef.current;
     const ar = baseMedia.naturalWidth / baseMedia.naturalHeight;
-    const cAR = clientWidth / clientHeight;
+    
+    // If it's a video, reserve ~64px of vertical space for the control bar
+    const isVideo = baseMedia.type === 'video';
+    const availableHeight = isVideo ? clientHeight - 64 : clientHeight;
+
+    
+    const cAR = clientWidth / availableHeight;
     let w: number, h: number;
     if (ar > cAR) {
       w = clientWidth;
       h = clientWidth / ar;
     } else {
-      h = clientHeight;
-      w = clientHeight * ar;
+      h = availableHeight;
+      w = availableHeight * ar;
     }
     setDisplaySize({ width: Math.floor(w), height: Math.floor(h) });
   }, [baseMedia]);
