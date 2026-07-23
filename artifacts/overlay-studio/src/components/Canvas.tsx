@@ -2,17 +2,30 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import GridOverlay from './GridOverlay';
 import PlatformOverlay from './PlatformOverlay';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+
+const FPS = 30;
+
+function formatTimecode(seconds: number): string {
+  const totalFrames = Math.floor(seconds * FPS);
+  const frames = totalFrames % FPS;
+  const totalSecs = Math.floor(seconds);
+  const secs = totalSecs % 60;
+  const mins = Math.floor(totalSecs / 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+}
 
 export default function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isScrubbing, setIsScrubbing] = useState(false);
 
   const baseMedia = useEditorStore((s) => s.baseMedia);
   const overlayMode = useEditorStore((s) => s.overlayMode);
-  const gridSettings = useEditorStore((s) => s.gridSettings);
   const selectedPlatform = useEditorStore((s) => s.selectedPlatform);
 
   const updateSize = useCallback(() => {
@@ -38,49 +51,96 @@ export default function Canvas() {
     return () => ro.disconnect();
   }, [updateSize]);
 
-  // Sync play/pause state whenever video element mounts or media changes
   useEffect(() => {
     setIsPlaying(true);
+    setCurrentTime(0);
+    setDuration(0);
   }, [baseMedia]);
+
+  // Wire up video events
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const onTimeUpdate = () => { if (!isScrubbing) setCurrentTime(vid.currentTime); };
+    const onDurationChange = () => setDuration(vid.duration || 0);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
+    vid.addEventListener('timeupdate', onTimeUpdate);
+    vid.addEventListener('durationchange', onDurationChange);
+    vid.addEventListener('loadedmetadata', onDurationChange);
+    vid.addEventListener('play', onPlay);
+    vid.addEventListener('pause', onPause);
+
+    return () => {
+      vid.removeEventListener('timeupdate', onTimeUpdate);
+      vid.removeEventListener('durationchange', onDurationChange);
+      vid.removeEventListener('loadedmetadata', onDurationChange);
+      vid.removeEventListener('play', onPlay);
+      vid.removeEventListener('pause', onPause);
+    };
+  }, [isScrubbing, baseMedia]);
 
   const togglePlayback = () => {
     const vid = videoRef.current;
     if (!vid) return;
-    if (vid.paused) {
-      vid.play();
-      setIsPlaying(true);
-    } else {
-      vid.pause();
-      setIsPlaying(false);
-    }
+    vid.paused ? vid.play() : vid.pause();
+  };
+
+  const stepFrame = (direction: 1 | -1) => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    vid.pause();
+    const next = Math.max(0, Math.min(duration, vid.currentTime + direction / FPS));
+    vid.currentTime = next;
+    setCurrentTime(next);
+  };
+
+  const onScrubStart = () => {
+    setIsScrubbing(true);
+    videoRef.current?.pause();
+  };
+
+  const onScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const t = Number(e.target.value);
+    setCurrentTime(t);
+    if (videoRef.current) videoRef.current.currentTime = t;
+  };
+
+  const onScrubEnd = () => {
+    setIsScrubbing(false);
+    if (isPlaying) videoRef.current?.play();
   };
 
   if (!baseMedia) return null;
 
+  const isVideo = baseMedia.type === 'video';
+
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex items-center justify-center overflow-hidden bg-[#0a0a0a]"
+      className="flex-1 flex flex-col items-center justify-center overflow-hidden bg-[#0a0a0a]"
       data-testid="canvas-container"
     >
       {displaySize.width > 0 && (
-        <div
-          id="export-canvas"
-          data-testid="canvas-area"
-          className="relative flex-shrink-0"
-          style={{ width: displaySize.width, height: displaySize.height }}
-        >
-          {/* Base media */}
-          {baseMedia.type === 'image' ? (
-            <img
-              src={baseMedia.src}
-              alt="Base"
-              className="absolute inset-0 w-full h-full"
-              draggable={false}
-              data-testid="base-image"
-            />
-          ) : (
-            <>
+        <>
+          {/* Canvas area */}
+          <div
+            id="export-canvas"
+            data-testid="canvas-area"
+            className="relative flex-shrink-0"
+            style={{ width: displaySize.width, height: displaySize.height }}
+          >
+            {baseMedia.type === 'image' ? (
+              <img
+                src={baseMedia.src}
+                alt="Base"
+                className="absolute inset-0 w-full h-full"
+                draggable={false}
+                data-testid="base-image"
+              />
+            ) : (
               <video
                 ref={videoRef}
                 src={baseMedia.src}
@@ -91,42 +151,105 @@ export default function Canvas() {
                 className="absolute inset-0 w-full h-full"
                 data-testid="base-video"
               />
+            )}
 
-              {/* Play / Pause button */}
-              <button
-                onClick={togglePlayback}
-                data-testid="button-play-pause"
-                className="absolute bottom-3 left-3 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-colors"
-                title={isPlaying ? 'Pause' : 'Play'}
-              >
-                {isPlaying ? (
-                  <Pause className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4 translate-x-px" />
-                )}
-              </button>
-            </>
-          )}
+            {overlayMode === 'grid' && (
+              <GridOverlay
+                width={displaySize.width}
+                height={displaySize.height}
+                naturalWidth={baseMedia.naturalWidth}
+                naturalHeight={baseMedia.naturalHeight}
+              />
+            )}
 
-          {/* Grid overlay */}
-          {overlayMode === 'grid' && (
-            <GridOverlay
-              width={displaySize.width}
-              height={displaySize.height}
-              naturalWidth={baseMedia.naturalWidth}
-              naturalHeight={baseMedia.naturalHeight}
-            />
-          )}
+            {overlayMode === 'platform' && selectedPlatform && (
+              <PlatformOverlay
+                width={displaySize.width}
+                height={displaySize.height}
+                platformId={selectedPlatform}
+              />
+            )}
+          </div>
 
-          {/* Platform overlay */}
-          {overlayMode === 'platform' && selectedPlatform && (
-            <PlatformOverlay
-              width={displaySize.width}
-              height={displaySize.height}
-              platformId={selectedPlatform}
-            />
+          {/* Video controls bar — outside export area */}
+          {isVideo && (
+            <div
+              data-testid="video-controls"
+              className="flex-shrink-0 flex flex-col gap-2 px-3 pt-2.5 pb-2"
+              style={{ width: displaySize.width }}
+            >
+              {/* Scrubber */}
+              <input
+                type="range"
+                min={0}
+                max={duration || 1}
+                step={1 / FPS}
+                value={currentTime}
+                onMouseDown={onScrubStart}
+                onTouchStart={onScrubStart}
+                onChange={onScrubChange}
+                onMouseUp={onScrubEnd}
+                onTouchEnd={onScrubEnd}
+                data-testid="scrubber"
+                className="w-full h-1 rounded-full appearance-none bg-white/15 accent-white cursor-pointer"
+              />
+
+              {/* Buttons + timecode row */}
+              <div className="flex items-center gap-2">
+                {/* Prev frame */}
+                <button
+                  onClick={() => stepFrame(-1)}
+                  data-testid="button-prev-frame"
+                  title="Previous frame"
+                  className="flex items-center justify-center w-7 h-7 rounded text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+                >
+                  <SkipBack className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Play / Pause */}
+                <button
+                  onClick={togglePlayback}
+                  data-testid="button-play-pause"
+                  title={isPlaying ? 'Pause' : 'Play'}
+                  className="flex items-center justify-center w-7 h-7 rounded text-white hover:bg-white/8 transition-colors"
+                >
+                  {isPlaying
+                    ? <Pause className="w-4 h-4" />
+                    : <Play className="w-4 h-4 translate-x-px" />}
+                </button>
+
+                {/* Next frame */}
+                <button
+                  onClick={() => stepFrame(1)}
+                  data-testid="button-next-frame"
+                  title="Next frame"
+                  className="flex items-center justify-center w-7 h-7 rounded text-white/50 hover:text-white hover:bg-white/8 transition-colors"
+                >
+                  <SkipForward className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Timecode */}
+                <span
+                  data-testid="timecode"
+                  className="ml-1 font-mono text-xs text-white/70 tracking-wider select-none"
+                >
+                  {formatTimecode(currentTime)}
+                </span>
+
+                <span className="font-mono text-xs text-white/25 select-none">/</span>
+
+                <span className="font-mono text-xs text-white/35 select-none">
+                  {formatTimecode(duration)}
+                </span>
+
+                {/* FPS badge */}
+                <span className="ml-auto text-[10px] text-white/20 font-mono select-none">
+                  {FPS} fps
+                </span>
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
