@@ -54,6 +54,8 @@ function DropZone() {
       'image/webp': [],
       'video/mp4': [],
       'video/webm': [],
+      'video/quicktime': ['.mov'],
+      'video/mov': ['.mov'],
     },
     maxFiles: 1,
   });

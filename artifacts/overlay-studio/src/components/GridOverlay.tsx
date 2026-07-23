@@ -46,12 +46,12 @@ export default function GridOverlay({ width, height, naturalWidth, naturalHeight
       className="absolute inset-0 pointer-events-none"
       data-testid="grid-overlay"
     >
-      {/* PNG grid lines — screen blend so black areas vanish */}
+      {/* PNG grid lines — invert turns black lines to white on transparent bg */}
       <img
         src={grid.src}
         alt={`${grid.label} grid`}
         className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ objectFit: 'fill', mixBlendMode: 'screen' }}
+        style={{ objectFit: 'fill', filter: 'invert(1)' }}
         draggable={false}
       />
 
