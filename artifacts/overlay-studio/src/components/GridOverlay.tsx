@@ -12,11 +12,14 @@ interface GridDef {
   rows: number;
 }
 
+// All grids divide the image into exactly 40 sections.
+// Portrait/square: 5 cols × 8 rows. Landscape: 8 cols × 5 rows.
+// Confirmed by pixel-level analysis of grid line positions in each PNG.
 const GRIDS: GridDef[] = [
-  { label: '1×1',  ratio: 1 / 1,   src: grid1x1,  cols: 5, rows: 5 },
-  { label: '4×5',  ratio: 4 / 5,   src: grid4x5,  cols: 4, rows: 5 },
-  { label: '9×16', ratio: 9 / 16,  src: grid9x16, cols: 5, rows: 9 },
-  { label: '16×9', ratio: 16 / 9,  src: grid16x9, cols: 9, rows: 5 },
+  { label: '1×1',  ratio: 1 / 1,   src: grid1x1,  cols: 5, rows: 8 },
+  { label: '4×5',  ratio: 4 / 5,   src: grid4x5,  cols: 5, rows: 8 },
+  { label: '9×16', ratio: 9 / 16,  src: grid9x16, cols: 5, rows: 8 },
+  { label: '16×9', ratio: 16 / 9,  src: grid16x9, cols: 8, rows: 5 },
 ];
 
 export function closestGrid(naturalWidth: number, naturalHeight: number): GridDef {
