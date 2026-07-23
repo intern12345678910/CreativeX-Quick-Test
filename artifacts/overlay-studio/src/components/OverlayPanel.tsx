@@ -66,7 +66,7 @@ export default function OverlayPanel() {
           <ModeButton
             active={overlayMode === 'grid'}
             icon={<Grid className="w-4 h-4" />}
-            label="Grid"
+            label="Clear Presence Grid"
             desc="Cell-based guide grid"
             onClick={() => handleModeToggle('grid')}
             testId="button-mode-grid"
@@ -74,7 +74,7 @@ export default function OverlayPanel() {
           <ModeButton
             active={overlayMode === 'platform'}
             icon={<LayoutGrid className="w-4 h-4" />}
-            label="Platform Format"
+            label="Safe Zone Overlay"
             desc="Social media safe zone"
             onClick={() => handleModeToggle('platform')}
             testId="button-mode-platform"
