@@ -13,11 +13,14 @@ interface EditorState {
   overlayMode: OverlayMode;
   gridSettings: GridSettings;
   selectedPlatform: PlatformId | null;
+  selectedGridCells: Set<string>;
 
   setBaseMedia: (media: BaseMedia | null) => void;
   setOverlayMode: (mode: OverlayMode) => void;
   setGridSettings: (s: Partial<GridSettings>) => void;
   setSelectedPlatform: (id: PlatformId | null) => void;
+  toggleGridCell: (key: string) => void;
+  clearGridCells: () => void;
   clearAll: () => void;
 }
 
@@ -26,12 +29,14 @@ export const useEditorStore = create<EditorState>((set) => ({
   overlayMode: 'none',
   gridSettings: { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
   selectedPlatform: null,
+  selectedGridCells: new Set(),
 
   setBaseMedia: (media) =>
     set({
       baseMedia: media,
       overlayMode: 'none',
       selectedPlatform: null,
+      selectedGridCells: new Set(),
       gridSettings: media
         ? defaultGrid(media.naturalWidth, media.naturalHeight)
         : { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
@@ -44,11 +49,22 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   setSelectedPlatform: (id) => set({ selectedPlatform: id }),
 
+  toggleGridCell: (key) =>
+    set((state) => {
+      const next = new Set(state.selectedGridCells);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return { selectedGridCells: next };
+    }),
+
+  clearGridCells: () => set({ selectedGridCells: new Set() }),
+
   clearAll: () =>
     set({
       baseMedia: null,
       overlayMode: 'none',
       selectedPlatform: null,
+      selectedGridCells: new Set(),
       gridSettings: { columns: 3, rows: 3, color: '#ffffff', lineWidth: 1, opacity: 0.5 },
     }),
 }));

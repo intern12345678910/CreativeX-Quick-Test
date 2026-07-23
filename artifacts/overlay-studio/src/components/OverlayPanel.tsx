@@ -6,9 +6,9 @@ import { toPng } from 'html-to-image';
 export default function OverlayPanel() {
   const overlayMode = useEditorStore((s) => s.overlayMode);
   const setOverlayMode = useEditorStore((s) => s.setOverlayMode);
-  const gridSettings = useEditorStore((s) => s.gridSettings);
-  const setGridSettings = useEditorStore((s) => s.setGridSettings);
   const selectedPlatform = useEditorStore((s) => s.selectedPlatform);
+  const selectedGridCells = useEditorStore((s) => s.selectedGridCells);
+  const clearGridCells = useEditorStore((s) => s.clearGridCells);
   const setSelectedPlatform = useEditorStore((s) => s.setSelectedPlatform);
   const baseMedia = useEditorStore((s) => s.baseMedia);
   const clearAll = useEditorStore((s) => s.clearAll);
@@ -81,85 +81,34 @@ export default function OverlayPanel() {
           />
         </div>
 
-        {/* Grid controls */}
-        {overlayMode === 'grid' && (
-          <div className="space-y-4" data-testid="grid-controls">
+        {/* Grid info */}
+        {overlayMode === 'grid' && baseMedia && (
+          <div className="space-y-2" data-testid="grid-controls">
             <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">
-              Grid settings
+              Grid
             </p>
-
-            <div className="space-y-3">
-              <SliderField
-                label="Columns"
-                value={gridSettings.columns}
-                min={2}
-                max={24}
-                onChange={(v) => setGridSettings({ columns: v })}
-                testId="slider-columns"
-              />
-              <SliderField
-                label="Rows"
-                value={gridSettings.rows}
-                min={2}
-                max={24}
-                onChange={(v) => setGridSettings({ rows: v })}
-                testId="slider-rows"
-              />
-              <SliderField
-                label={`Opacity ${Math.round(gridSettings.opacity * 100)}%`}
-                value={gridSettings.opacity * 100}
-                min={10}
-                max={100}
-                onChange={(v) => setGridSettings({ opacity: v / 100 })}
-                testId="slider-opacity"
-              />
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/50">Line color</span>
-                <label className="relative cursor-pointer" data-testid="color-picker">
-                  <span
-                    className="block w-7 h-7 rounded border border-white/20"
-                    style={{ background: gridSettings.color }}
-                  />
-                  <input
-                    type="color"
-                    value={gridSettings.color}
-                    onChange={(e) => setGridSettings({ color: e.target.value })}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                </label>
-              </div>
-
-              <div className="flex gap-2">
-                {[
-                  { label: 'Thin', value: 1 },
-                  { label: 'Med', value: 2 },
-                  { label: 'Thick', value: 3 },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setGridSettings({ lineWidth: opt.value })}
-                    className={`flex-1 py-1.5 text-xs rounded transition-colors ${
-                      gridSettings.lineWidth === opt.value
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white/6 text-white/50 hover:bg-white/10'
-                    }`}
-                    data-testid={`button-linewidth-${opt.label.toLowerCase()}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {baseMedia && (
-                <p className="text-[10px] text-white/25 leading-relaxed">
-                  Image: {baseMedia.naturalWidth} × {baseMedia.naturalHeight}px
-                  <br />
-                  Cell size: ~{Math.round(baseMedia.naturalWidth / gridSettings.columns)} ×{' '}
-                  {Math.round(baseMedia.naturalHeight / gridSettings.rows)}px
-                </p>
-              )}
+            <div className="px-3 py-2.5 rounded-md bg-white/4 space-y-1">
+              <p className="text-xs text-white/60">
+                Auto-selected from aspect ratio
+              </p>
+              <p className="text-[11px] text-white/30 font-mono">
+                {baseMedia.naturalWidth} × {baseMedia.naturalHeight}px
+              </p>
             </div>
+            {selectedGridCells.size > 0 && (
+              <div className="flex items-center justify-between px-3 py-2 rounded-md bg-red-950/40 ring-1 ring-red-800/40">
+                <span className="text-xs text-red-300">
+                  {selectedGridCells.size} cell{selectedGridCells.size !== 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={clearGridCells}
+                  className="text-[10px] text-red-400 hover:text-red-200 font-medium transition-colors"
+                  data-testid="button-clear-cells"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
         )}
 

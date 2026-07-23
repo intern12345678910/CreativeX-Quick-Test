@@ -1,80 +1,84 @@
-import { GridSettings } from '@/types';
+import { useEditorStore } from '@/store/useEditorStore';
+import grid1x1 from '@assets/2.5__-_1x1_1784733581539.png';
+import grid4x5 from '@assets/2.5__-_4x5_1784733581552.png';
+import grid9x16 from '@assets/2.5__-_9x16_1784733581552.png';
+import grid16x9 from '@assets/2.5__-_16x9_1784733581552.png';
+
+interface GridDef {
+  label: string;
+  ratio: number;
+  src: string;
+  cols: number;
+  rows: number;
+}
+
+const GRIDS: GridDef[] = [
+  { label: '1×1',  ratio: 1 / 1,   src: grid1x1,  cols: 5, rows: 5 },
+  { label: '4×5',  ratio: 4 / 5,   src: grid4x5,  cols: 4, rows: 5 },
+  { label: '9×16', ratio: 9 / 16,  src: grid9x16, cols: 5, rows: 9 },
+  { label: '16×9', ratio: 16 / 9,  src: grid16x9, cols: 9, rows: 5 },
+];
+
+export function closestGrid(naturalWidth: number, naturalHeight: number): GridDef {
+  const ar = naturalWidth / naturalHeight;
+  return GRIDS.reduce((best, g) =>
+    Math.abs(g.ratio - ar) < Math.abs(best.ratio - ar) ? g : best
+  );
+}
 
 interface Props {
   width: number;
   height: number;
-  settings: GridSettings;
+  naturalWidth: number;
+  naturalHeight: number;
 }
 
-export default function GridOverlay({ width, height, settings }: Props) {
-  const { columns, rows, color, lineWidth, opacity } = settings;
+export default function GridOverlay({ width, height, naturalWidth, naturalHeight }: Props) {
+  const grid = closestGrid(naturalWidth, naturalHeight);
+  const selectedGridCells = useEditorStore((s) => s.selectedGridCells);
+  const toggleGridCell = useEditorStore((s) => s.toggleGridCell);
 
-  const verticals: number[] = [];
-  for (let i = 1; i < columns; i++) {
-    verticals.push((width / columns) * i);
-  }
-
-  const horizontals: number[] = [];
-  for (let i = 1; i < rows; i++) {
-    horizontals.push((height / rows) * i);
-  }
+  const cellW = width / grid.cols;
+  const cellH = height / grid.rows;
 
   return (
-    <svg
+    <div
       className="absolute inset-0 pointer-events-none"
-      width={width}
-      height={height}
-      style={{ opacity }}
       data-testid="grid-overlay"
     >
-      {/* Outer border */}
-      <rect
-        x={lineWidth / 2}
-        y={lineWidth / 2}
-        width={width - lineWidth}
-        height={height - lineWidth}
-        fill="none"
-        stroke={color}
-        strokeWidth={lineWidth}
+      {/* PNG grid lines — screen blend so black areas vanish */}
+      <img
+        src={grid.src}
+        alt={`${grid.label} grid`}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ objectFit: 'fill', mixBlendMode: 'screen' }}
+        draggable={false}
       />
 
-      {/* Vertical lines */}
-      {verticals.map((x, i) => (
-        <line
-          key={`v-${i}`}
-          x1={x}
-          y1={0}
-          x2={x}
-          y2={height}
-          stroke={color}
-          strokeWidth={lineWidth}
-        />
-      ))}
-
-      {/* Horizontal lines */}
-      {horizontals.map((y, i) => (
-        <line
-          key={`h-${i}`}
-          x1={0}
-          y1={y}
-          x2={width}
-          y2={y}
-          stroke={color}
-          strokeWidth={lineWidth}
-        />
-      ))}
-
-      {/* Cell dimension labels at top-left cell */}
-      <text
-        x={8}
-        y={18}
-        fill={color}
-        fontSize={11}
-        fontFamily="monospace"
-        opacity={0.85}
-      >
-        {Math.round(width / columns)} × {Math.round(height / rows)} px / cell
-      </text>
-    </svg>
+      {/* Interactive cell layer */}
+      <div className="absolute inset-0 pointer-events-auto">
+        {Array.from({ length: grid.rows }, (_, row) =>
+          Array.from({ length: grid.cols }, (_, col) => {
+            const key = `${col}-${row}`;
+            const selected = selectedGridCells.has(key);
+            return (
+              <div
+                key={key}
+                data-testid={`grid-cell-${col}-${row}`}
+                onClick={() => toggleGridCell(key)}
+                className="absolute cursor-pointer transition-colors duration-100"
+                style={{
+                  left: col * cellW,
+                  top: row * cellH,
+                  width: cellW,
+                  height: cellH,
+                  background: selected ? 'rgba(220, 38, 38, 0.45)' : 'transparent',
+                }}
+              />
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }

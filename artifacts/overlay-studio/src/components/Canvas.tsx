@@ -2,10 +2,13 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import GridOverlay from './GridOverlay';
 import PlatformOverlay from './PlatformOverlay';
+import { Play, Pause } from 'lucide-react';
 
 export default function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
+  const [isPlaying, setIsPlaying] = useState(true);
 
   const baseMedia = useEditorStore((s) => s.baseMedia);
   const overlayMode = useEditorStore((s) => s.overlayMode);
@@ -35,6 +38,23 @@ export default function Canvas() {
     return () => ro.disconnect();
   }, [updateSize]);
 
+  // Sync play/pause state whenever video element mounts or media changes
+  useEffect(() => {
+    setIsPlaying(true);
+  }, [baseMedia]);
+
+  const togglePlayback = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused) {
+      vid.play();
+      setIsPlaying(true);
+    } else {
+      vid.pause();
+      setIsPlaying(false);
+    }
+  };
+
   if (!baseMedia) return null;
 
   return (
@@ -60,15 +80,32 @@ export default function Canvas() {
               data-testid="base-image"
             />
           ) : (
-            <video
-              src={baseMedia.src}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full"
-              data-testid="base-video"
-            />
+            <>
+              <video
+                ref={videoRef}
+                src={baseMedia.src}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full"
+                data-testid="base-video"
+              />
+
+              {/* Play / Pause button */}
+              <button
+                onClick={togglePlayback}
+                data-testid="button-play-pause"
+                className="absolute bottom-3 left-3 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm transition-colors"
+                title={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4 translate-x-px" />
+                )}
+              </button>
+            </>
           )}
 
           {/* Grid overlay */}
@@ -76,7 +113,8 @@ export default function Canvas() {
             <GridOverlay
               width={displaySize.width}
               height={displaySize.height}
-              settings={gridSettings}
+              naturalWidth={baseMedia.naturalWidth}
+              naturalHeight={baseMedia.naturalHeight}
             />
           )}
 
