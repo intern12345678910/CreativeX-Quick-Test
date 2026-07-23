@@ -4,7 +4,7 @@ import GridOverlay from './GridOverlay';
 import PlatformOverlay from './PlatformOverlay';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 
-const FPS = 30;
+const FPS = 24;
 
 function formatTimecode(seconds: number): string {
   const totalFrames = Math.floor(seconds * FPS);
@@ -18,6 +18,10 @@ function formatTimecode(seconds: number): string {
 export default function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const isScrubbingRef = useRef(false);
+  const wasPlayingRef = useRef(false);
+
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 });
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
@@ -57,15 +61,23 @@ export default function Canvas() {
     setDuration(0);
   }, [baseMedia]);
 
-  // Wire up video events
+  // CRITICAL FIX 1: Track when the canvas actually mounts so the effect knows to run
+  const isCanvasReady = displaySize.width > 0;
+
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
 
-    const onTimeUpdate = () => { if (!isScrubbing) setCurrentTime(vid.currentTime); };
+    const onTimeUpdate = () => { 
+      if (!isScrubbingRef.current) setCurrentTime(vid.currentTime); 
+    };
     const onDurationChange = () => setDuration(vid.duration || 0);
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
+
+    if (vid.readyState >= 1) {
+      setDuration(vid.duration);
+    }
 
     vid.addEventListener('timeupdate', onTimeUpdate);
     vid.addEventListener('durationchange', onDurationChange);
@@ -80,7 +92,7 @@ export default function Canvas() {
       vid.removeEventListener('play', onPlay);
       vid.removeEventListener('pause', onPause);
     };
-  }, [isScrubbing, baseMedia]);
+  }, [baseMedia, isCanvasReady]); // Now runs when displaySize.width > 0
 
   const togglePlayback = () => {
     const vid = videoRef.current;
@@ -98,24 +110,41 @@ export default function Canvas() {
   };
 
   const onScrubStart = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    wasPlayingRef.current = !vid.paused;
+    isScrubbingRef.current = true;
     setIsScrubbing(true);
-    videoRef.current?.pause();
+
+    vid.pause();
   };
 
   const onScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const t = Number(e.target.value);
-    setCurrentTime(t);
-    if (videoRef.current) videoRef.current.currentTime = t;
+    const frameNumber = Number(e.target.value);
+    const targetTime = frameNumber / FPS;
+
+    setCurrentTime(targetTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = targetTime;
+    }
   };
 
   const onScrubEnd = () => {
+    isScrubbingRef.current = false;
     setIsScrubbing(false);
-    if (isPlaying) videoRef.current?.play();
+
+    if (wasPlayingRef.current) {
+      videoRef.current?.play();
+    }
   };
 
   if (!baseMedia) return null;
 
   const isVideo = baseMedia.type === 'video';
+
+  const currentFrame = Math.floor(currentTime * FPS);
+  const totalFrames = Math.floor(duration * FPS);
 
   return (
     <div
@@ -125,7 +154,6 @@ export default function Canvas() {
     >
       {displaySize.width > 0 && (
         <>
-          {/* Canvas area */}
           <div
             id="export-canvas"
             data-testid="canvas-area"
@@ -171,32 +199,27 @@ export default function Canvas() {
             )}
           </div>
 
-          {/* Video controls bar — outside export area */}
           {isVideo && (
             <div
               data-testid="video-controls"
               className="flex-shrink-0 flex flex-col gap-2 px-3 pt-2.5 pb-2"
               style={{ width: displaySize.width }}
             >
-              {/* Scrubber */}
+              {/* CRITICAL FIX 2: onPointerDown/Up tracks dragging even outside the slider bounds */}
               <input
                 type="range"
                 min={0}
-                max={duration || 1}
-                step={1 / FPS}
-                value={currentTime}
-                onMouseDown={onScrubStart}
-                onTouchStart={onScrubStart}
+                max={totalFrames || 0}
+                step={1}
+                value={currentFrame}
+                onPointerDown={onScrubStart}
                 onChange={onScrubChange}
-                onMouseUp={onScrubEnd}
-                onTouchEnd={onScrubEnd}
+                onPointerUp={onScrubEnd}
                 data-testid="scrubber"
                 className="w-full h-1 rounded-full appearance-none bg-white/15 accent-white cursor-pointer"
               />
 
-              {/* Buttons + timecode row */}
               <div className="flex items-center gap-2">
-                {/* Prev frame */}
                 <button
                   onClick={() => stepFrame(-1)}
                   data-testid="button-prev-frame"
@@ -206,7 +229,6 @@ export default function Canvas() {
                   <SkipBack className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Play / Pause */}
                 <button
                   onClick={togglePlayback}
                   data-testid="button-play-pause"
@@ -218,7 +240,6 @@ export default function Canvas() {
                     : <Play className="w-4 h-4 translate-x-px" />}
                 </button>
 
-                {/* Next frame */}
                 <button
                   onClick={() => stepFrame(1)}
                   data-testid="button-next-frame"
@@ -228,7 +249,6 @@ export default function Canvas() {
                   <SkipForward className="w-3.5 h-3.5" />
                 </button>
 
-                {/* Timecode */}
                 <span
                   data-testid="timecode"
                   className="ml-1 font-mono text-xs text-white/70 tracking-wider select-none"
@@ -242,7 +262,6 @@ export default function Canvas() {
                   {formatTimecode(duration)}
                 </span>
 
-                {/* FPS badge */}
                 <span className="ml-auto text-[10px] text-white/20 font-mono select-none">
                   {FPS} fps
                 </span>
