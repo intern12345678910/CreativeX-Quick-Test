@@ -1,7 +1,8 @@
 import { useEditorStore } from '@/store/useEditorStore';
 import { PLATFORMS, PlatformId } from '@/types';
-import { Grid, LayoutGrid, Download, RotateCcw } from 'lucide-react';
+import { Check, ChevronRight, Download, Grid3X3, LayoutGrid, RotateCcw } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import type { ReactNode } from 'react';
 
 export default function OverlayPanel() {
   const overlayMode = useEditorStore((s) => s.overlayMode);
@@ -14,11 +15,7 @@ export default function OverlayPanel() {
   const clearAll = useEditorStore((s) => s.clearAll);
 
   const handleModeToggle = (mode: 'grid' | 'platform') => {
-    if (overlayMode === mode) {
-      setOverlayMode('none');
-    } else {
-      setOverlayMode(mode);
-    }
+    setOverlayMode(overlayMode === mode ? 'none' : mode);
   };
 
   const handlePlatformSelect = (id: PlatformId) => {
@@ -35,74 +32,81 @@ export default function OverlayPanel() {
       a.href = dataUrl;
       a.download = 'overlay-studio-export.png';
       a.click();
-    } catch (e) {
-      console.error('Export failed', e);
+    } catch (error) {
+      console.error('Export failed', error);
     }
   };
 
   return (
     <aside
-      className="w-64 flex-shrink-0 flex flex-col border-l border-white/8 bg-[#111113]"
+      className="flex max-h-[48dvh] w-full flex-shrink-0 flex-col border-t border-white/[.08] bg-[#1b2a2d] md:max-h-none md:w-[310px] md:border-l md:border-t-0"
       data-testid="overlay-panel"
     >
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-white/8 flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-widest text-white/40 uppercase">
-          Overlay
-        </span>
+      <div className="flex items-center justify-between border-b border-white/[.08] px-5 py-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8e9d99]">Guide controls</p>
+          <p className="mt-1 text-sm font-medium text-[#eee9dd]">Overlay configuration</p>
+        </div>
         <button
           onClick={clearAll}
-          className="p-1.5 rounded hover:bg-white/8 text-white/30 hover:text-white/60 transition-colors"
-          title="New"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8e9d99] transition-colors hover:bg-white/[.07] hover:text-[#eee9dd]"
+          title="Start a new composition"
           data-testid="button-new"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">New</span>
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Mode buttons */}
-        <div className="space-y-2">
+      <div className="flex-1 overflow-y-auto p-5">
+        <div className="mb-5 flex items-center justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8e9d99]">01 / Select guide</p>
+          <span className="font-mono text-[10px] text-[#647571]">2 modes</span>
+        </div>
+        <div className="space-y-2.5">
           <ModeButton
             active={overlayMode === 'grid'}
-            icon={<Grid className="w-4 h-4" />}
+            icon={<Grid3X3 className="h-4 w-4" />}
             label="Clear Presence Grid"
-            desc="Cell-based guide grid"
+            desc="Mark cells where the composition can breathe"
             onClick={() => handleModeToggle('grid')}
             testId="button-mode-grid"
           />
           <ModeButton
             active={overlayMode === 'platform'}
-            icon={<LayoutGrid className="w-4 h-4" />}
+            icon={<LayoutGrid className="h-4 w-4" />}
             label="Safe Zone Overlay"
-            desc="Social media safe zone"
+            desc="Preview platform UI and caption boundaries"
             onClick={() => handleModeToggle('platform')}
             testId="button-mode-platform"
           />
         </div>
 
-        {/* Grid info */}
         {overlayMode === 'grid' && baseMedia && (
-          <div className="space-y-2" data-testid="grid-controls">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">
-              Grid
-            </p>
-            <div className="px-3 py-2.5 rounded-md bg-white/4 space-y-1">
-              <p className="text-xs text-white/60">
-                Auto-selected from aspect ratio
-              </p>
-              <p className="text-[11px] text-white/30 font-mono">
+          <div className="mt-6 space-y-3" data-testid="grid-controls">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8e9d99]">02 / Mark cells</p>
+            <div className="rounded-lg border border-white/[.08] bg-[#223336] p-3.5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[#d9ded3]">Auto-fit grid</p>
+                <span className="rounded bg-[#314448] px-1.5 py-1 font-mono text-[9px] text-[#9daaa3]">
+                  {baseMedia.naturalWidth > baseMedia.naturalHeight ? '16:9' : baseMedia.naturalWidth === baseMedia.naturalHeight ? '1:1' : '9:16'}
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-[10px] text-[#71817d]">
                 {baseMedia.naturalWidth} × {baseMedia.naturalHeight}px
+              </p>
+              <p className="mt-3 border-t border-white/[.08] pt-3 text-[11px] leading-5 text-[#8e9d99]">
+                Click any section on the canvas to tint it red. Use the marked cells as a quick clearance check.
               </p>
             </div>
             {selectedGridCells.size > 0 && (
-              <div className="flex items-center justify-between px-3 py-2 rounded-md bg-red-950/40 ring-1 ring-red-800/40">
-                <span className="text-xs text-red-300">
+              <div className="flex items-center justify-between rounded-lg border border-[#d66050]/35 bg-[#633d3a]/35 px-3 py-2.5">
+                <span className="text-xs font-medium text-[#efaa9e]">
                   {selectedGridCells.size} cell{selectedGridCells.size !== 1 ? 's' : ''} selected
                 </span>
                 <button
                   onClick={clearGridCells}
-                  className="text-[10px] text-red-400 hover:text-red-200 font-medium transition-colors"
+                  className="rounded px-1.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#e18b7d] transition-colors hover:bg-[#d66050]/15 hover:text-[#ffd0c7]"
                   data-testid="button-clear-cells"
                 >
                   Clear
@@ -112,56 +116,56 @@ export default function OverlayPanel() {
           </div>
         )}
 
-        {/* Platform controls */}
         {overlayMode === 'platform' && (
-          <div className="space-y-2" data-testid="platform-controls">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">
-              Platform
-            </p>
-            {PLATFORMS.map((p) => (
+          <div className="mt-6 space-y-2.5" data-testid="platform-controls">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8e9d99]">02 / Choose platform</p>
+              <span className="font-mono text-[10px] text-[#647571]">{selectedPlatform ? 'Active' : 'None'}</span>
+            </div>
+            {PLATFORMS.map((platform) => (
               <button
-                key={p.id}
-                onClick={() => handlePlatformSelect(p.id)}
-                data-testid={`button-platform-${p.id}`}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-left transition-all ${
-                  selectedPlatform === p.id
-                    ? 'bg-white/10 ring-1 ring-inset'
-                    : 'bg-white/4 hover:bg-white/7'
+                key={platform.id}
+                onClick={() => handlePlatformSelect(platform.id)}
+                data-testid={`button-platform-${platform.id}`}
+                className={`group flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-all ${
+                  selectedPlatform === platform.id
+                    ? 'border-white/[.18] bg-[#2a3d40]'
+                    : 'border-white/[.06] bg-[#223336] hover:border-white/[.13] hover:bg-[#263b3e]'
                 }`}
-                style={
-                  selectedPlatform === p.id
-                    ? { ringColor: p.accentColor }
-                    : undefined
-                }
+                style={selectedPlatform === platform.id ? { borderColor: `${platform.accentColor}88` } : undefined}
               >
-                {/* Color dot */}
-                <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ background: p.accentColor }}
-                />
-                <span className="flex-1 text-xs font-medium text-white/80">
-                  {p.label}
-                </span>
-                <span className="text-[10px] text-white/30 font-mono">
-                  {p.aspectW}:{p.aspectH}
-                </span>
+                <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ background: platform.accentColor }} />
+                <span className="flex-1 text-xs font-medium text-[#d9ded3]">{platform.label}</span>
+                <span className="font-mono text-[10px] text-[#71817d]">{platform.aspectW}:{platform.aspectH}</span>
+                {selectedPlatform === platform.id ? (
+                  <Check className="h-3.5 w-3.5" style={{ color: platform.accentColor }} />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-[#526764] transition-transform group-hover:translate-x-0.5" />
+                )}
               </button>
             ))}
           </div>
         )}
+
+        {overlayMode === 'none' && (
+          <div className="mt-6 rounded-lg border border-dashed border-white/[.1] px-4 py-5 text-center">
+            <p className="text-xs font-medium text-[#a9b2aa]">No guide on canvas</p>
+            <p className="mt-1.5 text-[11px] leading-5 text-[#71817d]">Choose a mode above to start checking your composition.</p>
+          </div>
+        )}
       </div>
 
-      {/* Export */}
-      <div className="p-4 border-t border-white/8">
+      <div className="border-t border-white/[.08] p-5">
         <button
           onClick={handleExport}
           disabled={!baseMedia}
           data-testid="button-export"
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#d66050] py-3 text-sm font-bold text-[#fff6ed] shadow-[0_7px_18px_rgba(214,96,80,.18)] transition-all hover:bg-[#e27664] hover:shadow-[0_9px_24px_rgba(214,96,80,.26)] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none"
         >
-          <Download className="w-4 h-4" />
+          <Download className="h-4 w-4" />
           Export PNG
         </button>
+        <p className="mt-2 text-center font-mono text-[9px] uppercase tracking-[0.12em] text-[#647571]">2× resolution · transparent overlays</p>
       </div>
     </aside>
   );
@@ -176,7 +180,7 @@ function ModeButton({
   testId,
 }: {
   active: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   desc: string;
   onClick: () => void;
@@ -186,55 +190,17 @@ function ModeButton({
     <button
       onClick={onClick}
       data-testid={testId}
-      className={`w-full flex items-start gap-3 px-3 py-3 rounded-lg text-left transition-all ${
+      className={`flex w-full items-start gap-3 rounded-lg border px-3.5 py-3.5 text-left transition-all ${
         active
-          ? 'bg-blue-600/20 ring-1 ring-blue-500/50 text-white'
-          : 'bg-white/5 hover:bg-white/8 text-white/60'
+          ? 'border-[#d66050]/55 bg-[#633d3a]/45 text-[#f7e8dc]'
+          : 'border-white/[.06] bg-[#223336] text-[#a9b2aa] hover:border-white/[.13] hover:bg-[#263b3e]'
       }`}
     >
-      <span className={`mt-0.5 ${active ? 'text-blue-400' : 'text-white/30'}`}>{icon}</span>
+      <span className={`mt-0.5 ${active ? 'text-[#e58e7f]' : 'text-[#70827e]'}`}>{icon}</span>
       <div>
-        <p className={`text-sm font-semibold leading-none mb-1 ${active ? 'text-white' : 'text-white/70'}`}>
-          {label}
-        </p>
-        <p className="text-[11px] text-white/35">{desc}</p>
+        <p className={`mb-1 text-[13px] font-semibold leading-tight ${active ? 'text-[#f9eee4]' : 'text-[#c3ccc2]'}`}>{label}</p>
+        <p className="text-[11px] leading-4 text-[#7d8d89]">{desc}</p>
       </div>
     </button>
-  );
-}
-
-function SliderField({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-  testId,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
-  testId: string;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between items-center">
-        <span className="text-xs text-white/50">{label}</span>
-        {!label.includes('%') && (
-          <span className="text-xs text-white/70 font-mono">{value}</span>
-        )}
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer"
-        data-testid={testId}
-      />
-    </div>
   );
 }
