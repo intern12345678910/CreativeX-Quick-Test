@@ -135,7 +135,6 @@ function DropZone() {
         </main>
 
         <footer className="flex items-center justify-between border-t border-[#d6d1c7] pt-4 text-[10px] uppercase tracking-[0.16em] text-[#879090]">
-          <span>Built for the last 5%</span>
           <span className="font-mono">v1.0 / 24 FPS</span>
         </footer>
       </div>
