@@ -13,12 +13,14 @@ interface GridDef {
   rows: number;
 }
 
-// Every format is interacted with as 40 sections: 5 columns × 8 rows.
+// Every format is interacted with as 40 sections.
+// Portrait and square media use 5 columns × 8 rows.
+// Horizontal media uses 8 columns × 5 rows.
 const GRIDS: GridDef[] = [
   { label: '1×1', ratio: 1 / 1, src: grid1x1, cols: 5, rows: 8 },
   { label: '4×5', ratio: 4 / 5, src: grid4x5, cols: 5, rows: 8 },
   { label: '9×16', ratio: 9 / 16, src: grid9x16, cols: 5, rows: 8 },
-  { label: '16×9', ratio: 16 / 9, src: grid16x9, cols: 5, rows: 8 },
+  { label: '16×9', ratio: 16 / 9, src: grid16x9, cols: 8, rows: 5 },
 ];
 
 export function closestGrid(naturalWidth: number, naturalHeight: number): GridDef {
@@ -52,7 +54,7 @@ export default function GridOverlay({
 
   const cellW = width / grid.cols;
   const cellH = height / grid.rows;
-  const isLandscape = naturalWidth / naturalHeight > 1.35;
+  const isLandscape = naturalWidth > naturalHeight;
 
   useEffect(() => {
     if (mediaType !== 'image') {
