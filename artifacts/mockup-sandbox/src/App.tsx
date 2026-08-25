@@ -52,7 +52,7 @@ function PreviewRenderer({
         const comp = _resolveComponent(mod, name);
         if (!comp) {
           setError(
-            `No exported React component found in ${componentPath}.tsx\n\nMake sure the file has at least one exported function component.`,
+            `No exported react component found in ${componentPath}.tsx\n\nMake sure the file has at least one exported function component.`,
           );
           return;
         }

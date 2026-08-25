@@ -85,14 +85,14 @@ function DropZone() {
               <WandSparkles className="h-3.5 w-3.5" /> Position before publish
             </p>
             <h1 className="max-w-xl text-[clamp(3.2rem,7vw,6.5rem)] font-semibold leading-[.92] tracking-[-0.07em] text-[#1b2a2d]">
-              Make space<br /><span className="text-[#b04f43]">Quick Check</span>
+              CreativeX<br /><span className="text-[#b04f43]">Quick Check</span>
             </h1>
             <p className="mt-7 max-w-md text-base leading-7 text-[#607073] sm:text-lg">
               A quick way to check CreativeX Clear Presence and Safezones
             </p>
             <div className="mt-10 grid max-w-md grid-cols-2 gap-3 border-t border-[#d6d1c7] pt-5 text-[11px] leading-5 text-[#718080]">
-              <div><span className="font-mono text-[#1b2a2d]">01</span><br />Choose a guide</div>
-              <div><span className="font-mono text-[#1b2a2d]">02</span><br />Export a clean PNG</div>
+              <div><span className="font-mono text-[#1b2a2d]">01</span><br />Export your file</div>
+              <div><span className="font-mono text-[#1b2a2d]">02</span><br />Overlay your guidelines</div>
             </div>
           </section>
 
