@@ -31,11 +31,12 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Install and Build
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build frontend
         working-directory: ./artifacts/overlay-studio
-        run: |
-          pnpm install
-          npx vite build
+        run: npx vite build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
