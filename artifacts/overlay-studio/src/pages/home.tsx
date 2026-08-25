@@ -85,7 +85,7 @@ function DropZone() {
               <WandSparkles className="h-3.5 w-3.5" /> Position before publish
             </p>
             <h1 className="max-w-xl text-[clamp(3.2rem,7vw,6.5rem)] font-semibold leading-[.92] tracking-[-0.07em] text-[#1b2a2d]">
-              Make space<br /><span className="text-[#b04f43]">for the story.</span>
+              Make space<br /><span className="text-[#b04f43]">Quick Check</span>
             </h1>
             <p className="mt-7 max-w-md text-base leading-7 text-[#607073] sm:text-lg">
               A quick way to check CreativeX Clear Presence and Safezones
