@@ -88,7 +88,7 @@ function DropZone() {
               Make space<br /><span className="text-[#b04f43]">for the story.</span>
             </h1>
             <p className="mt-7 max-w-md text-base leading-7 text-[#607073] sm:text-lg">
-              A quiet, precise way to check where your content lands before it meets a feed. Load a frame, choose a guide, and mark what needs room.
+              A quick way to check CreativeX Clear Presence and Safezones
             </p>
             <div className="mt-10 grid max-w-md grid-cols-2 gap-3 border-t border-[#d6d1c7] pt-5 text-[11px] leading-5 text-[#718080]">
               <div><span className="font-mono text-[#1b2a2d]">01</span><br />Choose a guide</div>
